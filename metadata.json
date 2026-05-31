@@ -1,0 +1,6 @@
+{
+  "name": "SmartBridge",
+  "description": "An AI-powered learning platform featuring a RAG-based AI Tutor, personalized Study Plans, and automated Quiz generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

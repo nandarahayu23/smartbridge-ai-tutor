@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all (Global Safety Net)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Verified users only
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Helpers to access incoming/existing data
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation definitions
+    function isValidUserPublic(data) {
+      return data.keys().hasAll(['displayName', 'photoURL', 'createdAt'])
+        && data.keys().size() == 3
+        && data.displayName is string
+        && data.displayName.size() <= 150
+        && data.photoURL is string
+        && data.photoURL.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    function isValidUserPrivate(data) {
+      return data.keys().hasAll(['email', 'emailVerified', 'updatedAt'])
+        && data.keys().size() == 3
+        && data.email is string
+        && data.email == request.auth.token.email
+        && data.emailVerified is bool
+        && data.emailVerified == request.auth.token.email_verified
+        && data.updatedAt == request.time;
+    }
+
+    // Rules for users path
+    match /users/{userId} {
+      match /public/profile {
+        allow get: if isSignedIn();
+        allow create: if isOwner(userId) && isValidId(userId) && isValidUserPublic(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidUserPublic(incoming())
+          && incoming().createdAt == existing().createdAt; // createdAt is immutable
+        allow delete: if false; // Profiles shouldn't be deleted easily
+      }
+
+      match /private/info {
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidUserPrivate(incoming()) && isEmailVerified();
+        allow update: if isOwner(userId) && isValidId(userId) && isValidUserPrivate(incoming()) && isEmailVerified();
+        allow delete: if false;
+      }
+    }
+  }
+}

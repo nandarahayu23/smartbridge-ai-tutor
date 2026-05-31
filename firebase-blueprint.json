@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "UserPublic": {
+      "title": "UserPublic",
+      "description": "Public user profile details.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "photoURL", "createdAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Private user profile details containing PII.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "emailVerified": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "emailVerified", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/public/profile": {
+      "schema": "UserPublic",
+      "description": "Stores public profile information of a user"
+    },
+    "/users/{userId}/private/info": {
+      "schema": "UserPrivate",
+      "description": "Stores sensitive private details of a user"
+    }
+  }
+}
